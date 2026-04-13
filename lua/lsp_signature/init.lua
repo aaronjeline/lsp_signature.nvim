@@ -320,7 +320,9 @@ local signature_handler = function(err, result, ctx, config)
 
   if config.trigger_from_next_sig then
     if #result.signatures > 1 then
-      local cnt = math.abs(config.activeSignature - result.activeSignature)
+      local cfgSig = (type(config.activeSignature) == 'number' and config.activeSignature) or 0
+      local resSig = (type(result.activeSignature) == 'number' and result.activeSignature) or 0
+      local cnt = math.abs(cfgSig - resSig)
       for _ = 1, cnt do
         local m = result.signatures[1]
         table.insert(result.signatures, #result.signatures + 1, m)
@@ -334,7 +336,7 @@ local signature_handler = function(err, result, ctx, config)
   log('sig result', ctx, result, config)
   _LSP_SIG_CFG.signature_result = result
 
-  local activeSignature = result.activeSignature or 0
+  local activeSignature = (type(result.activeSignature) == 'number' and result.activeSignature) or 0
   activeSignature = activeSignature + 1
   if activeSignature > #result.signatures then
     -- this is a upstream bug of metals
@@ -367,7 +369,9 @@ local signature_handler = function(err, result, ctx, config)
     for i = #result.signatures, 1, -1 do
       local sig = result.signatures[i]
       -- hack for lua
-      local actPar = sig.activeParameter or result.activeParameter or 0
+      local actPar = (type(sig.activeParameter) == 'number' and sig.activeParameter)
+        or (type(result.activeParameter) == 'number' and result.activeParameter)
+        or 0
       if actPar > 0 and actPar + 1 > #(sig.parameters or {}) then
         log('invalid lsp response, active parameter out of boundary')
         -- reset active parameter to last parameter
@@ -809,8 +813,9 @@ local signature = function(opts)
     -- check should we close virtual hint
     if _LSP_SIG_CFG.signature_result and _LSP_SIG_CFG.signature_result.signatures ~= nil then
       local sig = _LSP_SIG_CFG.signature_result.signatures
-      local actSig = _LSP_SIG_CFG.signature_result.activeSignature or 0
-      local actPar = _LSP_SIG_CFG.signature_result.activeParameter or 0
+      local _r = _LSP_SIG_CFG.signature_result
+      local actSig = (type(_r.activeSignature) == 'number' and _r.activeSignature) or 0
+      local actPar = (type(_r.activeParameter) == 'number' and _r.activeParameter) or 0
       actSig, actPar = actSig + 1, actPar + 1
       if sig[actSig] ~= nil and sig[actSig].parameters ~= nil and #sig[actSig].parameters == actPar then
         M.on_CompleteDone()
